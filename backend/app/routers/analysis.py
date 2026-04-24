@@ -8,15 +8,18 @@ REST API endpoints for all analysis types:
 """
 
 import time
+import asyncio
 import logging
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.concurrency import run_in_threadpool
 
 from app.models.schemas import TextAnalysisRequest, VideoAnalysisRequest, AnalysisResult
 from app.services.text_analyzer import analyze_text, get_active_model_info
 from app.services.image_analyzer import analyze_image
 from app.services.video_analyzer import analyze_video
 from app.services.language_detector import detect_language, get_language_name
+from app.services.fact_checker import run_external_checks
 
 logger = logging.getLogger(__name__)
 
@@ -62,15 +65,46 @@ async def analyze_text_endpoint(request: TextAnalysisRequest):
 
     t0 = time.perf_counter()
     try:
+        # Step 1: Run LLM model analysis
         result = analyze_text(request.text)
-        elapsed = (time.perf_counter() - t0) * 1000
-
         result["detected_language"] = lang_name
 
+        # Step 2: Run external API checks concurrently (in thread pool — they are blocking HTTP)
+        logger.info("[TEXT] Running external fact-check & news API checks...")
+        external = await run_in_threadpool(run_external_checks, request.text)
+
+        # Step 3: Merge — adjust credibility score by external delta
+        original_score = result["credibility_score"]
+        if external["has_data"] and external["score_delta"] != 0:
+            adjusted = max(0, min(100, original_score + external["score_delta"]))
+            result["credibility_score"] = adjusted
+            logger.info(
+                f"[TEXT] Score adjusted: {original_score} → {adjusted} "
+                f"(delta={external['score_delta']:+d})"
+            )
+
+        # Recalculate label if score shifts significantly
+        score = result["credibility_score"]
+        if score >= 70:
+            result["label"] = "REAL"
+        elif score <= 35:
+            result["label"] = "FAKE"
+        else:
+            result["label"] = "MISLEADING"
+
+        # Step 4: Attach external data to response
+        result["fact_checks"]      = external["fact_checks"]
+        result["news_articles"]    = external["news_articles"]
+        result["external_checked"] = True
+        result["score_adjusted"]   = external["has_data"] and external["score_delta"] != 0
+
+        elapsed = (time.perf_counter() - t0) * 1000
         logger.info(f"[TEXT] ✓ Completed in {elapsed:.0f}ms")
         logger.info(f"[TEXT] Label          : {result.get('label')}")
         logger.info(f"[TEXT] Confidence     : {result.get('confidence', 0) * 100:.1f}%")
         logger.info(f"[TEXT] Credibility    : {result.get('credibility_score')}/100")
+        logger.info(f"[TEXT] Fact-checks    : {len(external['fact_checks'])}")
+        logger.info(f"[TEXT] News articles  : {len(external['news_articles'])}")
         logger.info("-" * 50)
 
         return JSONResponse(content=result)
