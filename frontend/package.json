@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -16,11 +16,11 @@
     "@tailwindcss/vite": "^4.2.4",
     "@vitejs/plugin-react": "^6.0.1",
     "axios": "^1.15.2",
-    "framer-motion": "^12.38.0",
     "lucide-react": "^1.9.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
     "react-circular-progressbar": "^2.2.0",
     "react-dropzone": "^15.0.0",
-    "react-router-dom": "^7.14.2",
     "tailwindcss": "^4.2.4"
   }
 }

@@ -57,7 +57,7 @@ def _ela_score(image: Image.Image, quality: int = 90) -> float:
 def _extract_metadata(image: Image.Image) -> dict:
     """Return selected EXIF fields if available."""
     try:
-        exif_data = image._getexif()  # PIL internal
+        exif_data = image.getexif()  # public API — works for JPEG, PNG, WebP
         if not exif_data:
             return {}
         interesting_tags = {

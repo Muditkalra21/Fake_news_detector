@@ -23,14 +23,16 @@ def _get_pipeline():
     if _pipeline is None:
         try:
             from transformers import pipeline
-            # cross-encoder/nli-deberta-v3-xsmall ≈ 70 MB — fits in free-tier RAM.
-            # For higher accuracy (but needs 2 GB RAM), switch to:
-            #   "facebook/bart-large-mnli"
+            # mrm8488/bert-tiny-finetuned-fake-news-detection ≈ 17 MB
+            # Purpose-trained REAL/FAKE classifier — 4× smaller than the
+            # zero-shot model, loads in ~2s, fits comfortably in 512 MB RAM.
+            # Upgrade option (better accuracy, still small):
+            #   "valurank/distilroberta-fake-news"  ≈ 82 MB
             _pipeline = pipeline(
-                "zero-shot-classification",
-                model="cross-encoder/nli-deberta-v3-xsmall",
+                "text-classification",
+                model="mrm8488/bert-tiny-finetuned-fake-news-detection",
             )
-            logger.info("Transformer pipeline loaded successfully.")
+            logger.info("Transformer pipeline loaded successfully (bert-tiny, ~17 MB).")
         except Exception as exc:
             logger.warning(f"Could not load transformer pipeline: {exc}")
     return _pipeline
@@ -175,18 +177,24 @@ def analyze_text(text: str) -> dict:
 
     if pipe:
         try:
-            candidate_labels = ["real news", "fake news", "misleading content"]
-            result = pipe(text[:1024], candidate_labels)  # truncate for speed
+            result = pipe(text[:512], truncation=True)[0]  # returns {label, score}
 
-            # Map model labels back to our internal labels
-            label_map = {
-                "real news": "REAL",
-                "fake news": "FAKE",
-                "misleading content": "MISLEADING",
-            }
-            top_label = result["labels"][0]
-            confidence = round(result["scores"][0], 3)
-            label = label_map.get(top_label, "UNKNOWN")
+            # bert-tiny: LABEL_1 = REAL, LABEL_0 = FAKE
+            raw_label = result["label"]   # "LABEL_0" or "LABEL_1"
+            score = round(result["score"], 3)
+
+            if raw_label == "LABEL_1":          # model says REAL
+                if score >= 0.65:
+                    label = "REAL"
+                else:
+                    label = "MISLEADING"        # uncertain → cautious middle ground
+            else:                               # model says FAKE
+                if score >= 0.65:
+                    label = "FAKE"
+                else:
+                    label = "MISLEADING"
+
+            confidence = score
 
             # Compute credibility score (0-100)
             if label == "REAL":

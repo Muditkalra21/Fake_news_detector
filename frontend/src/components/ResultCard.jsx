@@ -129,7 +129,8 @@ export default function ResultCard({ result }) {
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {sources.map((src, i) => {
-              const host = new URL(src).hostname.replace('www.', '');
+              let host;
+              try { host = new URL(src).hostname.replace('www.', ''); } catch { host = src; }
               return (
                 <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="source-link">
                   ↗ {host}
