@@ -66,45 +66,7 @@ Fake_news_detection/
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- **Python 3.10+** — [python.org](https://python.org)
-- **Node.js 18+** — [nodejs.org](https://nodejs.org)
-
----
-
-### 1️⃣ Clone / open the project
-
-```bash
-cd d:\Fake_news_detection
-```
-
----
-
-### 2️⃣ Start the Backend (FastAPI)
-
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-API docs auto-generated at: **http://127.0.0.1:8000/docs**
-
-> **Note:** On first run, the HuggingFace model (`facebook/bart-large-mnli`) will be downloaded (~1.6 GB). Subsequent starts are instant.  
-> The backend gracefully falls back to rule-based analysis if the model cannot be loaded.
-
----
-
-### 3️⃣ Start the Frontend (React + Vite)
-
-```bash
-cd frontend
-npm install        # only needed once
-npm run dev
-```
-
-Open: **http://localhost:5173**
+See **[INSTALL.md](./INSTALL.md)** for the full step-by-step local setup guide covering prerequisites, virtual environment, environment variables, and troubleshooting.
 
 ---
 
@@ -151,8 +113,8 @@ file: <binary image>
 ## 🧠 How the AI Works
 
 ### Text Analysis
-1. Uses **`facebook/bart-large-mnli`** (zero-shot classification) via HuggingFace Transformers
-2. Classifies into: `real news`, `fake news`, `misleading content`
+1. Uses **`mrm8488/bert-tiny-finetuned-fake-news-detection`** (~17 MB) via HuggingFace Transformers
+2. Classifies into: `REAL`, `FAKE`, or `MISLEADING` (low-confidence detections)
 3. Augmented with regex-based misinformation pattern detection
 4. Falls back to pure rule-based heuristics if model is unavailable
 
@@ -203,7 +165,7 @@ NEWS_API_KEY=your_key               # Optional
 |---|---|
 | Frontend | React 18 + Vite + Tailwind CSS v4 |
 | Backend | FastAPI (Python) + Uvicorn |
-| NLP Model | HuggingFace Transformers (BART-MNLI) |
+| NLP Model | HuggingFace Transformers (bert-tiny fake-news, ~17 MB) |
 | Image Processing | Pillow (PIL) |
 | Language Detection | langdetect |
 | HTTP Client | Axios |
