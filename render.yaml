@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: truthlens-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    # Uncomment below for paid plan (needed for full AI model):
+    # plan: starter   # $7/mo, 512 MB RAM
+    # plan: standard  # $25/mo, 2 GB RAM — recommended for transformer model
