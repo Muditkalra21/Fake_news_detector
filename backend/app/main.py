@@ -11,6 +11,7 @@ Environment variables:
 
 import os
 import logging
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -72,8 +73,13 @@ app.include_router(analysis_router)
 # ---------------------------------------------------------------------------
 @app.get("/health", tags=["system"])
 async def health():
-    """Quick endpoint to verify the API is running."""
-    return {"status": "ok", "version": "1.0.0"}
+    """Quick endpoint to verify the API is running and which model is active."""
+    from app.services.text_analyzer import get_active_model_info
+    return {
+        "status":  "ok",
+        "version": "1.0.0",
+        "model":   get_active_model_info(),
+    }
 
 
 @app.get("/", tags=["system"])
